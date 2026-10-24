@@ -5,6 +5,15 @@ const pool = require("./db");
 
 const app = express();
 
+const cors = require("cors");
+
+app.use(cors({
+  origin: [
+    "http://localhost:5173",
+    "http://127.0.0.1:5500"
+  ]
+}));
+
 app.use(express.json());
 
 const multer = require("multer");
@@ -60,8 +69,6 @@ app.get("/api/db-test", async (req, res) => {
   }
 });
 
-const PORT = process.env.PORT || 3000;
-
 app.get("/api/tables-test", async (req, res) => {
   try {
     const result = await pool.query(
@@ -79,6 +86,46 @@ app.get("/api/tables-test", async (req, res) => {
     res.status(500).json({
       success: false,
       error: error.message
+    });
+  }
+});
+
+app.get("/api/settings/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!/^\d+$/.test(id)) {
+      return res.status(400).json({
+        error: "Invalid settings ID"
+      });
+    }
+
+    const result = await pool.query(
+      `SELECT
+        id,
+        height_cm,
+        circumstances,
+        campus_map IS NOT NULL AS has_campus_map,
+        class_schedule IS NOT NULL AS has_schedule,
+        created_at
+       FROM student_settings
+       WHERE id = $1`,
+      [id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        error: "Settings not found"
+      });
+    }
+
+    res.json(result.rows[0]);
+
+  } catch (error) {
+    console.error("GET settings error:", error.message);
+
+    res.status(500).json({
+      error: "Failed to retrieve settings"
     });
   }
 });
@@ -105,6 +152,85 @@ app.get("/api/settings-test", async (req, res) => {
 
     res.status(500).json({
       error: "Could not retrieve settings"
+    });
+  }
+});
+
+app.get("/api/settings/:id/image/:type", async (req, res) => {
+  try {
+    const { id, type } = req.params;
+
+    if (!/^\d+$/.test(id)) {
+      return res.status(400).json({
+        error: "Invalid settings ID"
+      });
+    }
+
+    const imageTypes = {
+      campus: {
+        data: "campus_map",
+        mime: "campus_map_type"
+      },
+      schedule: {
+        data: "class_schedule",
+        mime: "class_schedule_type"
+      }
+    };
+
+    const selected = imageTypes[type];
+
+    if (!selected) {
+      return res.status(400).json({
+        error: "Invalid image type. Use campus or schedule."
+      });
+    }
+
+    const result = await pool.query(
+      `SELECT
+        ${selected.data} AS image_data,
+        ${selected.mime} AS image_type
+       FROM student_settings
+       WHERE id = $1`,
+      [id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        error: "Settings not found"
+      });
+    }
+
+    const { image_data, image_type } = result.rows[0];
+
+    if (!image_data) {
+      return res.status(404).json({
+        error: "Image not found"
+      });
+    }
+
+    const allowedTypes = [
+      "image/png",
+      "image/jpeg",
+      "image/webp"
+    ];
+
+    if (!allowedTypes.includes(image_type)) {
+      return res.status(500).json({
+        error: "Unsupported saved image type"
+      });
+    }
+
+    res.set("Content-Type", image_type);
+    res.set("X-Content-Type-Options", "nosniff");
+    res.set("Cache-Control", "no-store");
+
+    res.send(image_data);
+
+  } catch (error) {
+    console.error("GET image error:", error.message);
+
+    res.status(500).json({
+      error: "Failed to retrieve image"
     });
   }
 });
@@ -193,6 +319,8 @@ app.use((err, req, res, next) => {
     error: err.message
   });
 });
+
+const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`Timely running on port ${PORT}`);
