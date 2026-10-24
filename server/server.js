@@ -5,6 +5,10 @@ const pool = require("./db");
 
 const app = express();
 
+const { analyzeSchedule } = require("./gemma");
+
+const { calculateNextDeparture } = require("./departure");
+
 const cors = require("cors");
 
 app.use(cors({
@@ -312,12 +316,282 @@ app.post(
   }
 );
 
+app.get("/api/settings/:id/classes", async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!/^\d+$/.test(id)) {
+      return res.status(400).json({
+        error: "Invalid settings ID"
+      });
+    }
+
+    const result = await pool.query(
+      `SELECT id, course, day,
+              start_time, end_time, location
+       FROM classes
+       WHERE settings_id = $1
+       ORDER BY CASE day
+         WHEN 'Monday' THEN 1
+         WHEN 'Tuesday' THEN 2
+         WHEN 'Wednesday' THEN 3
+         WHEN 'Thursday' THEN 4
+         WHEN 'Friday' THEN 5
+         WHEN 'Saturday' THEN 6
+         ELSE 7
+       END, start_time`,
+      [id]
+    );
+
+    res.json({
+      classes: result.rows
+    });
+
+  } catch (error) {
+    console.error(error.message);
+
+    res.status(500).json({
+      error: "Could not retrieve classes"
+    });
+  }
+});
+
+app.get("/api/settings/:id/next-departure", async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const walkMinutes = Number(req.query.walkMinutes);
+    const bufferMinutes = req.query.bufferMinutes === undefined
+      ? 5
+      : Number(req.query.bufferMinutes);
+
+    if (!/^\d+$/.test(id)) {
+      return res.status(400).json({
+        error: "Invalid settings ID"
+      });
+    }
+
+    if (
+      !Number.isInteger(walkMinutes) ||
+      walkMinutes < 1 ||
+      walkMinutes > 120 ||
+      !Number.isInteger(bufferMinutes) ||
+      bufferMinutes < 0 ||
+      bufferMinutes > 60
+    ) {
+      return res.status(400).json({
+        error: "Invalid walking time or buffer"
+      });
+    }
+
+    const result = await pool.query(
+      `SELECT course, day, start_time, location
+       FROM classes
+       WHERE settings_id = $1`,
+      [id]
+    );
+
+    const nextDeparture = calculateNextDeparture(
+      result.rows,
+      walkMinutes,
+      bufferMinutes
+    );
+
+    if (!nextDeparture) {
+      return res.status(404).json({
+        error: "No upcoming classes found"
+      });
+    }
+
+    res.json({
+      message: "Next departure calculated!",
+      nextDeparture
+    });
+
+  } catch (error) {
+    console.error("Departure error:", error.message);
+
+    res.status(500).json({
+      error: "Could not calculate departure"
+    });
+  }
+});
+
 app.use((err, req, res, next) => {
   console.error("Upload error:", err.message);
 
   res.status(400).json({
     error: err.message
   });
+});
+
+app.post("/api/settings/:id/analyze-schedule", async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!/^\d+$/.test(id)) {
+      return res.status(400).json({
+        error: "Invalid settings ID"
+      });
+    }
+
+    // 1. Get the saved schedule image
+    const result = await pool.query(
+      `SELECT class_schedule, class_schedule_type
+       FROM student_settings
+       WHERE id = $1`,
+      [id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        error: "Settings not found"
+      });
+    }
+
+    const schedule = result.rows[0];
+
+    if (!schedule.class_schedule) {
+      return res.status(400).json({
+        error: "No class schedule uploaded"
+      });
+    }
+
+    const allowedTypes = [
+      "image/png",
+      "image/jpeg",
+      "image/webp"
+    ];
+
+    if (!allowedTypes.includes(schedule.class_schedule_type)) {
+      return res.status(400).json({
+        error: "Unsupported image type"
+      });
+    }
+
+    // 2. Ask Gemma 4 to analyze it
+    const extracted = await analyzeSchedule(
+      schedule.class_schedule,
+      schedule.class_schedule_type
+    );
+
+    // 3. Return the extracted classes
+    res.json({
+      message: "Schedule analyzed successfully!",
+      settingsId: Number(id),
+      classes: extracted.classes
+    });
+
+  } catch (error) {
+    console.error("Gemma analysis error:", error.message);
+
+    res.status(500).json({
+      error: "Failed to analyze schedule"
+    });
+  }
+});
+
+app.post("/api/settings/:id/classes", async (req, res) => {
+  const { id } = req.params;
+  const { classes } = req.body;
+
+  if (!/^\d+$/.test(id)) {
+    return res.status(400).json({
+      error: "Invalid settings ID"
+    });
+  }
+
+  if (!Array.isArray(classes) || classes.length > 50) {
+    return res.status(400).json({
+      error: "Expected an array of up to 50 classes"
+    });
+  }
+
+  const validDays = [
+    "Monday", "Tuesday", "Wednesday",
+    "Thursday", "Friday", "Saturday", "Sunday"
+  ];
+
+  const validTime = (time) =>
+    typeof time === "string" &&
+    /^([01]\d|2[0-3]):[0-5]\d$/.test(time);
+
+  for (const c of classes) {
+    if (
+      !c ||
+      typeof c.course !== "string" ||
+      !c.course.trim() ||
+      c.course.length > 200 ||
+      !validDays.includes(c.day) ||
+      !validTime(c.startTime) ||
+      (c.endTime != null && !validTime(c.endTime)) ||
+      (c.location != null &&
+        (typeof c.location !== "string" ||
+         c.location.length > 200))
+    ) {
+      return res.status(400).json({
+        error: "Invalid class data. Review the schedule."
+      });
+    }
+  }
+
+  const client = await pool.connect();
+
+  try {
+    await client.query("BEGIN");
+
+    const settings = await client.query(
+      "SELECT id FROM student_settings WHERE id = $1",
+      [id]
+    );
+
+    if (settings.rows.length === 0) {
+      await client.query("ROLLBACK");
+      return res.status(404).json({
+        error: "Settings not found"
+      });
+    }
+
+    // Replace previously saved classes
+    await client.query(
+      "DELETE FROM classes WHERE settings_id = $1",
+      [id]
+    );
+
+    for (const c of classes) {
+      await client.query(
+        `INSERT INTO classes
+         (settings_id, course, day,
+          start_time, end_time, location)
+         VALUES ($1, $2, $3, $4, $5, $6)`,
+        [
+          id,
+          c.course.trim(),
+          c.day,
+          c.startTime,
+          c.endTime ?? null,
+          c.location ?? null
+        ]
+      );
+    }
+
+    await client.query("COMMIT");
+
+    res.json({
+      message: "Classes saved successfully!",
+      count: classes.length
+    });
+
+  } catch (error) {
+    await client.query("ROLLBACK");
+    console.error(error.message);
+
+    res.status(500).json({
+      error: "Could not save classes"
+    });
+  } finally {
+    client.release();
+  }
 });
 
 const PORT = process.env.PORT || 3000;
