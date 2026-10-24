@@ -17,7 +17,7 @@
 
   font: 18px/145% var(--sans);
   letter-spacing: 0.18px;
-  color-scheme: light dark;
+  color-scheme: light ;
   color: var(--text);
   background: var(--bg);
   font-synthesis: none;
@@ -68,9 +68,9 @@ body {
 
 h1,
 h2 {
-  font-family: var(--heading);
-  font-weight: 500;
-  color: var(--text-h);
+  font-family: 'Saira', sans-serif;
+  font-weight: 600;
+  color: #355443;
 }
 
 h1 {
