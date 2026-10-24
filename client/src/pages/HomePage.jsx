@@ -17,4 +17,5 @@ function HomePage() {
     </main>
   )
 }
+
 export default HomePage

@@ -9,6 +9,8 @@ const { analyzeSchedule } = require("./gemma");
 
 const { calculateNextDeparture } = require("./departure");
 
+const { estimateWalk } = require("./walking");
+
 const cors = require("cors");
 
 app.use(cors({
@@ -264,9 +266,9 @@ app.post(
         });
       }
 
-      if (!campusMap || !classSchedule) {
+      if (!classSchedule) {
         return res.status(400).json({
-          error: "Both images are required"
+            error: "Class schedule image is required"
         });
       }
 
@@ -294,10 +296,10 @@ app.post(
         [
           heightCm,
           circumstances || null,
-          campusMap.buffer,
-          campusMap.mimetype,
-          classSchedule.buffer,
-          classSchedule.mimetype
+          campusMap?.buffer ?? null,
+          campusMap?.mimetype ?? null,
+          campusMap?.buffer ?? null,
+          campusMap?.mimetype ?? null,
         ]
       );
 
@@ -425,7 +427,20 @@ app.use((err, req, res, next) => {
   });
 });
 
-app.post("/api/settings/:id/analyze-schedule", async (req, res) => {
+// prevent public access to AI analysis if disabled
+function requireAIEnabled(req, res, next) {
+  if (process.env.ENABLE_PUBLIC_AI !== "true") {
+    return res.status(503).json({
+      error: "AI analysis is temporarily disabled"
+    });
+  }
+
+  next();
+}
+
+app.post("/api/settings/:id/analyze-schedule",
+    requireAIEnabled,
+    async (req, res) => {
   try {
     const { id } = req.params;
 
@@ -591,6 +606,62 @@ app.post("/api/settings/:id/classes", async (req, res) => {
     });
   } finally {
     client.release();
+  }
+});
+
+app.post("/api/estimate-walk", async (req, res) => {
+  try {
+    const {
+      startLocation,
+      latitude,
+      longitude,
+      destination,
+      classStart
+    } = req.body;
+
+    const hasGPS =
+      typeof latitude === "number" &&
+      typeof longitude === "number" &&
+      Number.isFinite(latitude) &&
+      Number.isFinite(longitude) &&
+      latitude >= -90 && latitude <= 90 &&
+      longitude >= -180 && longitude <= 180;
+
+    const hasLocationName =
+      typeof startLocation === "string" &&
+      startLocation.trim().length > 0 &&
+      startLocation.length <= 150;
+
+    if (
+      (!hasGPS && !hasLocationName) ||
+      typeof destination !== "string" ||
+      !destination.trim() ||
+      destination.length > 150 ||
+      typeof classStart !== "string"
+    ) {
+      return res.status(400).json({
+        error: "Valid location, destination and class time required"
+      });
+    }
+
+    const origin = hasGPS
+      ? `GPS coordinates at latitude ${latitude}, longitude ${longitude}, near UC Santa Cruz`
+      : startLocation;
+
+    const result = await estimateWalk(
+      origin,
+      destination,
+      classStart
+    );
+
+    res.json(result);
+
+  } catch (error) {
+    console.error(error.message);
+
+    res.status(500).json({
+      error: "Could not estimate walking time"
+    });
   }
 });
 
