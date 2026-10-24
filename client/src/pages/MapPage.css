@@ -1,36 +1,623 @@
+/* ========================================
+   MAIN MAP PAGE
+======================================== */
 
 .map-page {
-  max-width: 1000px;
+  width: 100%;
+  max-width: 1100px;
   margin: 0 auto;
-  padding: 30px;
+  padding: 30px 24px 60px;
+  box-sizing: border-box;
+
+  color: #355745;
+  font-family: inherit;
 }
+
+/* ========================================
+   PAGE HEADER
+======================================== */
+
+.map-header {
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.map-header h1 {
+  font-size: clamp(36px, 5vw, 56px);
+  font-weight: 700;
+  color: #355745;
+  margin: 0 0 15px;
+}
+
+.map-header p {
+  font-size: 18px;
+  color: #667c70;
+  line-height: 1.6;
+  margin: 8px 0;
+}
+
+.map-header .map-disclaimer {
+  font-size: 14px;
+  color: #7a897e;
+}
+
+/* ========================================
+   INTERACTIVE MAP
+======================================== */
 
 .map-container {
   width: 100%;
   height: 500px;
-  margin: 25px 0;
+  margin: 25px auto 45px;
+
   overflow: hidden;
-  border-radius: 16px;
+
+  border: 2px solid #b4c9b0;
+  border-radius: 18px;
+
+  box-sizing: border-box;
+  position: relative;
 }
 
-.estimate-result {
-  width: 90%;
-  max-width: 700px;
-  min-height: 180px;
-  margin: 0 auto 32px;
-  padding: 20px;
-  box-sizing: border-box;
+.map-container .leaflet-container {
+  height: 100%;
+  width: 100%;
+  z-index: 0;
+}
+
+/* ========================================
+   WALKING FORM CARD
+======================================== */
+
+.walking-form {
+  width: 100%;
+  max-width: 900px;
+
+  margin: 0 auto 45px;
+  padding: 35px;
 
   background-color: #f8faf6;
+
   border: 2px solid #b4c9b0;
-  border-radius: 12px;
+  border-radius: 20px;
+
+  box-sizing: border-box;
+}
+
+.walking-form h2 {
+  text-align: center;
+
+  color: #355745;
+  font-size: 30px;
+  font-weight: 700;
+
+  margin: 0 0 12px;
+}
+
+.form-description {
+  text-align: center;
+
+  color: #718579;
+  font-size: 16px;
+  line-height: 1.5;
+
+  margin: 0 0 30px;
+}
+
+/* ========================================
+   FORM GRID
+======================================== */
+
+.walking-form-grid {
+  display: grid;
+
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+
+  gap: 24px;
+  width: 100%;
+}
+
+/* ========================================
+   FORM FIELDS
+======================================== */
+
+.form-field {
+  display: flex;
+  flex-direction: column;
+
+  gap: 9px;
+  min-width: 0;
+
+  text-align: left;
+}
+
+.form-field.full-width {
+  grid-column: 1 / -1;
+}
+
+.form-field label {
+  font-size: 16px;
+  font-weight: 600;
+  color: #355745;
+}
+
+.form-field input {
+  width: 100%;
+  min-width: 0;
+
+  padding: 14px 16px;
+
+  background-color: #ffffff;
+  color: #2e4738;
+
+  border: 2px solid #c4d3c0;
+  border-radius: 10px;
+
+  box-sizing: border-box;
+
+  font-size: 16px;
+  font-family: inherit;
+
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.form-field input::placeholder {
+  color: #9aa99e;
+}
+
+.form-field input:focus {
+  outline: none;
+
+  border-color: #729b79;
+
+  box-shadow:
+    0 0 0 3px rgba(114, 155, 121, 0.15);
+}
+
+/* ========================================
+   CALCULATE BUTTON
+======================================== */
+
+.calculate-button {
+  display: block;
+
+  width: fit-content;
+  min-width: 250px;
+
+  margin: 35px auto 0;
+  padding: 17px 35px;
+
+  background-color: #a9c4a3;
+  color: #2e4738;
+
+  border: 2px solid #91b18d;
+  border-radius: 14px;
+
+  font-size: 20px;
+  font-weight: 600;
+  font-family: inherit;
+
+  cursor: pointer;
+
+  transition:
+    background-color 0.2s ease,
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.calculate-button:hover:not(:disabled) {
+  background-color: #91b18d;
+
+  transform: translateY(-2px);
+
+  box-shadow:
+    0 5px 15px rgba(53, 87, 69, 0.15);
+}
+
+.calculate-button:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.calculate-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* ========================================
+   RESULTS SECTION
+======================================== */
+
+.results-section {
+  width: 100%;
+  max-width: 900px;
+
+  margin: 0 auto 40px;
+
+  text-align: center;
+}
+
+.results-section h2 {
+  color: #355745;
+
+  font-size: 30px;
+  font-weight: 700;
+
+  margin: 0 0 22px;
+}
+
+/* ========================================
+   RESULT CARD
+======================================== */
+
+.estimate-result {
+  width: 100%;
+  min-height: 180px;
+
+  padding: 35px 25px;
+
+  background-color: #f8faf6;
+
+  border: 2px solid #b4c9b0;
+  border-radius: 20px;
+
+  box-sizing: border-box;
 
   color: #2e4738;
   text-align: center;
 }
 
-.estimate-result pre {
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-  text-align: left;
+/* ========================================
+   DEPARTURE INFORMATION
+======================================== */
+
+.departure-card {
+  width: 100%;
+  text-align: center;
+}
+
+.departure-label {
+  color: #667c70;
+
+  font-size: 20px;
+  font-weight: 500;
+
+  margin: 0 0 10px;
+}
+
+.departure-time {
+  color: #355745;
+
+  font-size: clamp(48px, 8vw, 76px);
+  font-weight: 700;
+
+  line-height: 1.2;
+
+  margin: 10px 0 25px;
+}
+
+/* ========================================
+   ROUTE DISPLAY
+======================================== */
+
+.departure-route {
+  display: flex;
+
+  align-items: center;
+  justify-content: center;
+
+  flex-wrap: wrap;
+  gap: 12px;
+
+  color: #355745;
+
+  font-size: 18px;
+  line-height: 1.5;
+
+  margin-bottom: 30px;
+}
+
+.route-arrow {
+  color: #729b79;
+  font-size: 24px;
+  font-weight: bold;
+}
+
+/* ========================================
+   WALKING TIME DETAILS
+======================================== */
+
+.time-details {
+  display: grid;
+
+  grid-template-columns: repeat(3, 1fr);
+
+  gap: 15px;
+
+  background-color: #e4eedf;
+
+  border-radius: 14px;
+
+  padding: 22px;
+  margin: 25px auto;
+
+  max-width: 650px;
+}
+
+.time-detail {
+  display: flex;
+  flex-direction: column;
+
+  align-items: center;
+  justify-content: center;
+
+  gap: 10px;
+}
+
+.time-detail span {
+  color: #667c70;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.time-detail strong {
+  color: #355745;
+  font-size: 24px;
+  font-weight: 700;
+}
+
+/* ========================================
+   ESTIMATE WARNING
+======================================== */
+
+.estimate-warning {
+  color: #718579;
+
+  font-size: 14px;
+  line-height: 1.5;
+
+  margin: 20px 0 0;
+}
+
+/* ========================================
+   LOADING STATE
+======================================== */
+
+.loading-message {
+  display: flex;
+  flex-direction: column;
+
+  align-items: center;
+  justify-content: center;
+
+  gap: 15px;
+
+  min-height: 130px;
+
+  color: #667c70;
+  font-size: 18px;
+}
+
+.loading-spinner {
+  width: 36px;
+  height: 36px;
+
+  border: 4px solid #dce9d8;
+  border-top-color: #729b79;
+
+  border-radius: 50%;
+
+  animation: timely-spin 0.8s linear infinite;
+}
+
+@keyframes timely-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ========================================
+   ERROR STATE
+======================================== */
+
+.error-message {
+  padding: 20px;
+
+  background-color: #fff1f1;
+  color: #b91c1c;
+
+  border: 1px solid #f3c2c2;
+  border-radius: 12px;
+
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+/* ========================================
+   EMPTY RESULT STATE
+======================================== */
+
+.result-placeholder {
+  display: flex;
+  flex-direction: column;
+
+  align-items: center;
+  justify-content: center;
+
+  min-height: 130px;
+
+  color: #718579;
+
+  font-size: 17px;
+  line-height: 1.6;
+}
+
+.result-placeholder p {
+  margin: 5px 0;
+}
+
+/* ========================================
+   BACK TO HOME BUTTON
+======================================== */
+
+.home-button-container {
+  display: flex;
+  justify-content: center;
+
+  margin-top: 35px;
+}
+
+.home-button {
+  display: inline-block;
+
+  padding: 16px 35px;
+
+  background-color: #a9c4a3;
+  color: #2e4738;
+
+  border: 2px solid #91b18d;
+  border-radius: 14px;
+
+  font-size: 18px;
+  font-weight: 600;
+  text-decoration: none;
+
+  transition:
+    background-color 0.2s ease,
+    transform 0.2s ease;
+}
+
+.home-button:hover {
+  background-color: #91b18d;
+  color: #2e4738;
+
+  transform: translateY(-2px);
+}
+
+/* ========================================
+   TABLET RESPONSIVENESS
+======================================== */
+
+@media (max-width: 768px) {
+  .map-page {
+    padding: 20px 16px 45px;
+  }
+
+  .map-container {
+    height: 400px;
+  }
+
+  .walking-form {
+    padding: 25px;
+  }
+
+  .walking-form h2,
+  .results-section h2 {
+    font-size: 25px;
+  }
+
+  .walking-form-grid {
+    gap: 18px;
+  }
+
+  .time-details {
+    gap: 10px;
+    padding: 18px;
+  }
+
+  .time-detail strong {
+    font-size: 20px;
+  }
+}
+
+/* ========================================
+   MOBILE RESPONSIVENESS
+======================================== */
+
+@media (max-width: 600px) {
+  .map-page {
+    padding: 15px 12px 40px;
+  }
+
+  .map-header h1 {
+    font-size: 36px;
+  }
+
+  .map-header p {
+    font-size: 15px;
+  }
+
+  .map-container {
+    height: 320px;
+    margin-bottom: 30px;
+  }
+
+  .walking-form {
+    padding: 22px 18px;
+    border-radius: 16px;
+  }
+
+  .walking-form h2 {
+    font-size: 23px;
+  }
+
+  .walking-form-grid {
+    grid-template-columns: 1fr;
+    gap: 18px;
+  }
+
+  .form-field.full-width {
+    grid-column: auto;
+  }
+
+  .form-field input {
+    font-size: 16px;
+    padding: 13px 14px;
+  }
+
+  .calculate-button {
+    width: 100%;
+    min-width: 0;
+
+    font-size: 18px;
+  }
+
+  .results-section h2 {
+    font-size: 24px;
+  }
+
+  .estimate-result {
+    padding: 25px 15px;
+  }
+
+  .departure-time {
+    font-size: 52px;
+  }
+
+  .departure-route {
+    font-size: 16px;
+    gap: 8px;
+  }
+
+  .time-details {
+    grid-template-columns: 1fr;
+    gap: 18px;
+  }
+
+  .time-detail {
+    gap: 5px;
+  }
+
+  .time-detail strong {
+    font-size: 22px;
+  }
+
+  .home-button {
+    width: 100%;
+    max-width: 300px;
+
+    text-align: center;
+    box-sizing: border-box;
+  }
 }
