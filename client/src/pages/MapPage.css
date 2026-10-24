@@ -12,3 +12,25 @@
   overflow: hidden;
   border-radius: 16px;
 }
+
+.estimate-result {
+  width: 90%;
+  max-width: 700px;
+  min-height: 180px;
+  margin: 0 auto 32px;
+  padding: 20px;
+  box-sizing: border-box;
+
+  background-color: #f8faf6;
+  border: 2px solid #b4c9b0;
+  border-radius: 12px;
+
+  color: #2e4738;
+  text-align: center;
+}
+
+.estimate-result pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  text-align: left;
+}

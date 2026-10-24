@@ -16,6 +16,9 @@ const cors = require("cors");
 app.use(cors({
   origin: [
     "http://localhost:5173",
+    "http://localhost:5174",
+    "http://127.0.0.1:5173",
+    "http://127.0.0.1:5174",
     "http://127.0.0.1:5500"
   ]
 }));
@@ -294,12 +297,12 @@ app.post(
         VALUES ($1, $2, $3, $4, $5, $6)
         RETURNING id, height_cm, circumstances, created_at`,
         [
-          heightCm,
-          circumstances || null,
-          campusMap?.buffer ?? null,
-          campusMap?.mimetype ?? null,
-          campusMap?.buffer ?? null,
-          campusMap?.mimetype ?? null,
+            heightCm,
+            circumstances || null,
+            campusMap?.buffer ?? null,
+            campusMap?.mimetype ?? null,
+            classSchedule.buffer,
+            classSchedule.mimetype,
         ]
       );
 

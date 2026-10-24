@@ -12,6 +12,8 @@ function UploadPage() {
   const [settingsId, setSettingsId] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [departure, setDeparture] = useState(null);
+  const [walkMinutes, setWalkMinutes] = useState(10);
 
   async function handleSubmit(event) {
     event.preventDefault();
@@ -109,6 +111,20 @@ function UploadPage() {
             onChange={(e) =>
               setSchedule(e.target.files?.[0] || null)
             }
+            required
+          />
+        </div>
+
+        <div>
+          <label htmlFor="walkMinutes">
+            Estimated walking time (minutes)
+          </label>
+
+          <input
+            id="walkMinutes"
+            type="number"
+            value={walkMinutes}
+            onChange={(e) => setWalkMinutes(e.target.value)}
             required
           />
         </div>
