@@ -109,12 +109,51 @@ async function handleCalculate(event) {
     </p>
   )}
 
-  {result && (
-    <>
-      <h3>Calculation Complete!</h3>
-      <pre>{JSON.stringify(result, null, 2)}</pre>
-    </>
-  )}
+{result && (
+  <div className="departure-card">
+    <h3>Your Recommended Departure Time</h3>
+
+    <h1 className="departure-time">
+      {new Date(result.leaveAt).toLocaleTimeString(
+        'en-US',
+        {
+          hour: 'numeric',
+          minute: '2-digit',
+          timeZone: 'America/Los_Angeles'
+        }
+      )}
+    </h1>
+
+    <p>
+      Leave from <strong>{result.startLocation}</strong>
+      {' '}to reach{' '}
+      <strong>{result.destination}</strong>
+    </p>
+
+    <div className="time-details">
+      <p>
+        Walking time:
+        <strong> {result.estimatedWalkingMinutes} minutes</strong>
+      </p>
+
+      <p>
+        Safety buffer:
+        <strong> {result.bufferMinutes} minutes</strong>
+      </p>
+
+      <p>
+        Total time:
+        <strong> {result.totalMinutes} minutes</strong>
+      </p>
+    </div>
+
+    {result.estimateOnly && (
+      <p className="estimate-warning">
+        This is an estimate. Actual walking times may vary.
+      </p>
+    )}
+  </div>
+)}
 
   {!loading && !error && !result && (
     <p>
